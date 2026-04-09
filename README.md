@@ -1,22 +1,22 @@
 # Final Project: Compare & Contrast — Dual Implementation of an Expense Approval Workflow
 
-**Name:** Alice Yang
-**Student Number:** 041200019
-**Course Code:** CST8917: Serverless Applications
-**Project Title:** Dual Implementation of an Expense Approval Workflow
-**Date:** 04/09/2026
+- **Name:** Alice Yang
+- **Student Number:** 041200019
+- **Course Code:** CST8917: Serverless Applications
+- **Project Title:** Dual Implementation of an Expense Approval Workflow
+- **Date:** 04/09/2026
 
 ---
 
 ## Version A Summary (Durable Functions)
-**Description:** Version A implements the workflow entirely in code using Azure Durable Functions (Python 3.12). It utilizes an HTTP Trigger client function to trigger an Orchestrator function, which manages the state and calls subsequent Activity functions for validation and processing.
-**Design Decisions:** To ensure API tests accurately received `400 Bad Request` errors for missing fields, I implemented synchronous validation inside the HTTP Starter function before calling `StartNewAsync`. This intercepted problematic payloads before it was queued, avoiding silent background failures.
-**Challenges:** Implementing the Human Interaction pattern required using Durable Timers, the `WaitForExternalEvent` and a `CreateTimer` tasks. Managing this state and building the custom HTTP endpoints required to pass the manager's "Approve" or "Reject" payloads back to the specific orchestration instance was a higher hurdle compared to a visual approach in Logic Apps in Version B.
+- **Description:** Version A implements the workflow entirely in code using Azure Durable Functions (Python 3.12). It utilizes an HTTP Trigger client function to trigger an Orchestrator function, which manages the state and calls subsequent Activity functions for validation and processing.
+- **Design Decisions:** To ensure API tests accurately received `400 Bad Request` errors for missing fields, I implemented synchronous validation inside the HTTP Starter function before calling `StartNewAsync`. This intercepted problematic payloads before it was queued, avoiding silent background failures.
+- **Challenges:** Implementing the Human Interaction pattern required using Durable Timers, the `WaitForExternalEvent` and a `CreateTimer` tasks. Managing this state and building the custom HTTP endpoints required to pass the manager's "Approve" or "Reject" payloads back to the specific orchestration instance was a higher hurdle compared to a visual approach in Logic Apps in Version B.
 
 ## Version B Summary (Logic Apps, Service Bus)
-**Description:** Version B is a decoupled, event-driven architecture. A Service Bus Queue ingests requests, triggering a Logic App orchestrator. The Logic App passes data to a single Python Azure Function for just validation, then routes the results to a Service Bus Topic with filtered subscriptions (`approved-sub`, `rejected-sub`, `escalated-sub`, `failed-sub`).
-**Manager Approval Approach:** I utilized the Outlook "Send email with options" connector. This natively pauses the Logic App and sends an actionable HTML email to the manager. For the timeout (Scenario 4), I adjusted the action's timeout settings (e.g., `PT20S`) and added a parallel escalation branch configured to `Run after -> has timed out`.
-**Challenges:** E2E local testing was the biggest challenge. Because the Service Bus REST API requires Shared Access Signatures (SAS), I could not simply use a basic `.http` file. I had to generate a SAS token to authenticate my VS Code REST Client requests against the Azure resources.
+- **Description:** Version B is a decoupled, event-driven architecture. A Service Bus Queue ingests requests, triggering a Logic App orchestrator. The Logic App passes data to a single Python Azure Function for just validation, then routes the results to a Service Bus Topic with filtered subscriptions (`approved-sub`, `rejected-sub`, `escalated-sub`, `failed-sub`).
+- **Manager Approval Approach:** I utilized the Outlook "Send email with options" connector. This natively pauses the Logic App and sends an actionable HTML email to the manager. For the timeout (Scenario 4), I adjusted the action's timeout settings (e.g., `PT20S`) and added a parallel escalation branch configured to `Run after -> has timed out`.
+- **Challenges:** E2E local testing was the biggest challenge. Because the Service Bus REST API requires Shared Access Signatures (SAS), I could not simply use a basic `.http` file. I had to generate a SAS token to authenticate my VS Code REST Client requests against the Azure resources.
 
 ---
 
