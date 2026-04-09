@@ -1,0 +1,76 @@
+@baseUrl = http://cst8917final-durable-func.azurewebsites.net/api/
+
+### scenario 1: valid expense under $100 (auto-approved)
+POST {{baseUrl}}/expenses
+Content-Type: application/json
+
+{
+    "employeeName": "Jane Doe",
+    "employeeEmail": "jane@example.com",
+    "amount": 45.50,
+    "category": "supplies",
+    "description": "Office notebooks",
+    "managerEmail": "manager@example.com"
+}
+
+### scenario 2, 3, & 4: valid expense >= $100 (requires manager)
+POST {{baseUrl}}/expenses
+Content-Type: application/json
+
+{
+    "employeeName": "John Smith",
+    "employeeEmail": "john@example.com",
+    "amount": 450.00,
+    "category": "travel",
+    "description": "Flight to conference",
+    "managerEmail": "manager@example.com"
+}
+
+### --------------------------------------------------------
+### id from response above
+@instanceId = a59d67cfa1dd420b93b7a847b96dad36
+### --------------------------------------------------------
+
+### scenario 2: manager approves
+POST {{baseUrl}}/expenses/{{instanceId}}/manager-response
+Content-Type: application/json
+
+{
+    "action": "Approved"
+}
+
+### scenario 3: manager rejects
+POST {{baseUrl}}/expenses/{{instanceId}}/manager-response
+Content-Type: application/json
+
+{
+    "action": "Rejected"
+}
+
+### scenario 4: no manager response (escalated)
+# this happens when we run the initial >= $100 request 
+# and wait for the 20 sec timer to expire w/o sending 
+# an approval or rejection.
+
+
+### scenario 5: missing required fields (validation error)
+POST {{baseUrl}}/expenses
+Content-Type: application/json
+
+{
+    "employeeName": "Alice",
+    "amount": 50.00
+}
+
+### scenario 6: invalid category (validation error)
+POST {{baseUrl}}/expenses
+Content-Type: application/json
+
+{
+    "employeeName": "Bob",
+    "employeeEmail": "bob@example.com",
+    "amount": 120.00,
+    "category": "snacks",
+    "description": "Vending machine",
+    "managerEmail": "manager@example.com"
+}

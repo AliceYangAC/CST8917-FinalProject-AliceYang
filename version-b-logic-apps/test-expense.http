@@ -1,0 +1,58 @@
+@namespace = cst8917final-sb-namespace
+@queueName = expense-requests
+
+# sas for connecting to service bus
+@sasToken = SharedAccessSignature sr=https%3A%2F%2Fcst8917final-sb-namespace.servicebus.windows.net&sig=OvS8xom9nPx9UY6f8sM6A55mSF6J45BNMaY6uEZxSDo%3D&se=1776371054&skn=RootManageSharedAccessKey
+
+
+### scenario 1: valid expense under $100 (routes to auto-approved branch)
+POST https://{{namespace}}.servicebus.windows.net/{{queueName}}/messages
+Authorization: {{sasToken}}
+Content-Type: application/json
+
+{
+    "employeeName": "Alice Yang",
+    "employeeEmail": "alice.j.yang@outlook.com",
+    "amount": 45.00,
+    "category": "meals",
+    "description": "Lunch during client meeting",
+    "managerEmail": "carclinch-dev@outlook.com"
+}
+
+### scenario 2, 3, & 4: valid expense >= $100 (routes to requires-manager branch)
+POST https://{{namespace}}.servicebus.windows.net/{{queueName}}/messages
+Authorization: {{sasToken}}
+Content-Type: application/json
+
+{
+    "employeeName": "Alice Yang",
+    "employeeEmail": "alice.j.yang@outlook.com",
+    "amount": 500.00,
+    "category": "travel",
+    "description": "Flight to tech conference",
+    "managerEmail": "carclinch-dev@outlook.com"
+}
+
+### scenario 5: missing required fields (function returns validation error to Logic App)
+POST https://{{namespace}}.servicebus.windows.net/{{queueName}}/messages
+Authorization: {{sasToken}}
+Content-Type: application/json
+
+{
+    "employeeName": "Alice Yang",
+    "amount": 50.00
+}
+
+### scenario 6: invalid category (function returns validation error to Logic App)
+POST https://{{namespace}}.servicebus.windows.net/{{queueName}}/messages
+Authorization: {{sasToken}}
+Content-Type: application/json
+
+{
+    "employeeName": "Alice Yang",
+    "employeeEmail": "alice.j.yang@outlook.com",
+    "amount": 80.00,
+    "category": "entertainment", 
+    "description": "Movie tickets",
+    "managerEmail": "carclinch-dev@outlook.com"
+}
