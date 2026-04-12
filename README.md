@@ -8,6 +8,12 @@
 
 ---
 
+## Video Links
+
+[Link to MD](https://github.com/AliceYangAC/CST8917-FinalProject-AliceYang/blob/main/presentation/video-link.md)
+
+---
+
 ## Version A Summary (Durable Functions)
 - **Description:** Version A implements the workflow entirely in code using Azure Durable Functions (Python 3.12). It utilizes an HTTP Trigger client function to trigger an Orchestrator function, which manages the state and calls subsequent Activity functions for validation and processing.
 - **Design Decisions:** To ensure API tests accurately received `400 Bad Request` errors for missing fields, I implemented synchronous validation inside the HTTP Starter function before calling `StartNewAsync`. This intercepted problematic payloads before it was queued, avoiding silent background failures.
