@@ -49,7 +49,42 @@ Version A's observability relied on the `statusQueryGetUri` provided by the init
 
 ### 6. Costs
 
-[Estimate cost at ~100 expenses/day and ~10,000 expenses/day. Use the Azure Pricing Calculator and state your assumptions.]
+#### Assumptions
+
+##### Workflow Logic 
+1. Trigger: Receive request (HTTP for Durable / Service Bus for Logic Apps).
+2. Validation: One execution of the Python validation logic.
+3. Condition: Check if amount is ≥$100.
+4. Wait/Approval: System waits for manager or timer (15 min).
+
+##### Version A
+1. Execution Count: Each expense run triggers 5 internal executions (1x Client, 1x Orchestrator logic, 1x Validation activity, 1x Notification activity, and 1x Durable Timer/Manager logic).
+2. Performance: Assumes 128 MB memory allocation and a 200ms average duration per execution.
+##### Version B
+1. Workflow Steps: Each Logic App run executes 10 Actions (triggers, variable initialization, conditionals, and control steps).
+2. External Calls: Each run uses 4 Standard Connectors (Service Bus Trigger, Azure Function Call, Service Bus Topic Send, and Office 365/Email).
+3. Messaging: Service Bus requires the Standard Tier to support the Topics and Subscriptions defined in the Terraform. Each expense involves 3 Operations (Queue push, Topic push, and Subscription pull).
+4. Outcome: Send one notification email and log to storage.
+
+##### **Monthly Cost Comparison (CAD/USD)**
+*Note: All prices are based on the estimates provided in the XLSX files in `/presentation/price_calculator`, expored from Azure Pricing Calculator*
+
+| Orchestration Version                    | 100 Expenses / Day | 10,000 Expenses / Day |
+| :--------------------------------------- | :----------------- | :-------------------- |
+| **Version A (Durable Functions)**        | **$0.70**          | **$9.25**             |
+| **Version B (Logic Apps + Service Bus)** | **$12.64**         | **$243.76**           |
+
+##### **Cost Breakdown Summary**
+
+**Version A: Durable Functions**
+
+* **100/day:** The cost is almost entirely dominated by the **Storage Account** ($0.70). The Azure Functions compute cost is $0.00 because it stays well within the monthly free grant (1 million executions).
+* **10,000/day:** As volume increases to 1.5 million executions per month, you begin to exceed the free grant slightly, but the primary cost driver remains **Storage Transactions** and capacity ($9.05) due to the high-write nature of Durable Functions state management.
+
+**Version B: Logic Apps**
+
+* **100/day:** The cost is significantly higher even at low volume due to the **Service Bus Standard Tier base charge** (approx. $9.81). Logic App actions add another ~$2.15.
+* **10,000/day:** Logic Apps become the dominant cost factor ($224.90). Because Logic Apps are billed per action and per connector execution, the high volume of 100,000 actions and 40,000 connectors per day scales the price linearly and rapidly compared to the Functions model.
 
 ### 7. Recommendation
 
