@@ -23,19 +23,19 @@
 ## Comparison Analysis
 
 ### 1. Development Experience
-Version A (Durable Functions) takes a code-first approach written in Python, thus providing a high degree of control over the logic flow, data structures, and state management. The learning curve primarily involved understanding the orchestrator's constraints, like the need for deterministic code. I want to emphasize too that the ability to debug and step through orchestrator and activity code mid-execution through the terminal in VSCode allowed me a high degree of confidence that the logic was behaving correctly before any cloud deployment.
+Version A (Durable Functions) takes a code-first approach written in Python, thus providing a high degree of control over the logic flow, data structures, and state management. The learning curve primarily involved understanding the orchestrator's constraints, like the need for deterministic code. [1] I want to emphasize too that the ability to debug and step through orchestrator and activity code mid-execution through the terminal in VSCode allowed me a high degree of confidence that the logic was behaving correctly before any cloud deployment.
 
 Version B (Logic Apps and Service Bus) shifted instead to a more visual & design-focused model. Architecting the workflow became much more "tactile," moving heavily away from code except for the validation logic still conducted by the Function. However, Version B required significantly more Azure infra setup. Provisioning the Service Bus, queues, topics, and filtered subscriptions was necessary before the orchestration could even be built. While Version A felt like traditional development where the logic is all built and verified in code, Version B felt like putting building blocks together whose branches could only be tested when all the required Azure resources were fully deployed, linked up, and saved.
 
 ### 2. Testability
 My last few points lead to my verdict here. Version A offered a much superior local testing experience. The VSCode REST Client and `.http` files allowed me to spin up the entire orchestration process locally alongside using the Azure Functions Core Tools and Azurite. Then, it was simple to mock payloads, trigger the HTTP client function, and debug Python code to verify logic.
 
-Version B was comparatively quite a bit harder to test E2E locally. While the standalone Python validation function could be tested in isolation using `.http` files, triggering the actual Logic App required pushing messages to the live and configured Azure Service Bus with its queue and topics fully setup. Furthermore, since the Service Bus REST API uses SAS tokens, testing required either running a custom script to generate a token for the `.http` file (as I show in the demo), or manually pasting JSON payloads into the Service Bus Explorer in the Azure Portal. In conclusion, local testing is direct for Version A, but very limited for E2E Version B.
+Version B was comparatively quite a bit harder to test E2E locally. While the standalone Python validation function could be tested in isolation using `.http` files, triggering the actual Logic App required pushing messages to the live and configured Azure Service Bus with its queue and topics fully setup. Furthermore, since the Service Bus REST API uses SAS tokens, testing required either running a custom script to generate a token [2] for the `.http` file (as I show in the demo), or manually pasting JSON payloads into the Service Bus Explorer in the Azure Portal. In conclusion, local testing is direct for Version A, but very limited for E2E Version B.
 
 ### 3. Error Handling
-Error handling in Durable Functions (Version A) is just as straightforward as testing from my experience through using VSCode terminal and debug mode as needed, and `try/except` blocks. For example, Durable Functions offers robust, built-in `RetryOptions` for activity calls, with full support for custom retry counts, intervals, and exponential backoff, all expressed directly in code.
+Error handling in Durable Functions (Version A) is just as straightforward as testing from my experience through using VSCode terminal and debug mode as needed, and `try/except` blocks. For example, Durable Functions offers robust, built-in `RetryOptions` for activity calls, with full support for custom retry counts, intervals, and exponential backoff [3], all expressed directly in code.
 
-In Logic Apps (Version B), error handling relies on the "Configure run after" setting on actions. Catching validation errors from the Python function required parsing the JSON response and using a Switch/Condition control to route the `"validation-error"` status to a dedicated Service Bus branch (publishing to a `failed-sub` subscription). Handling the manager timeout required configuring a parallel branch to execute explicitly when the email action timed out. While visually simple to understand, error handling in Version B can quickly feel cumbersome compared to how Version A handles it just with  `try/except` blocks.
+In Logic Apps (Version B), error handling relies on the "Configure run after" setting on actions. [4] Catching validation errors from the Python function required parsing the JSON response and using a Switch/Condition control to route the `"validation-error"` status to a dedicated Service Bus branch (publishing to a `failed-sub` subscription). Handling the manager timeout required configuring a parallel branch to execute explicitly when the email action timed out. While visually simple to understand, error handling in Version B can quickly feel cumbersome compared to how Version A handles it just with  `try/except` blocks.
 
 ### 4. Human Interaction Pattern
 The requirement to wait for a manager's approval highlighted the fundamental difference between the two architectures. In Version A, the orchestrator utilized `WaitForExternalEvent` alongside a durable timer (`CreateTimer`). This put the orchestrator to sleep, completely freeing up compute resources, but it required building custom HTTP endpoints to manually route the manager's "Approve" or "Reject" payloads back to the specific instance ID.
@@ -66,15 +66,15 @@ Version A's observability relied on the `statusQueryGetUri` provided by the init
 3. Messaging: Service Bus requires the Standard Tier to support the Topics and Subscriptions defined in the Terraform. Each expense involves 3 Operations (Queue push, Topic push, and Subscription pull).
 4. Outcome: Send one notification email and log to storage.
 
-##### **Monthly Cost Comparison (CAD/USD)**
-*Note: All prices are based on the estimates provided in the XLSX files in `/presentation/price_calculator`, expored from Azure Pricing Calculator*
+#### Monthly Cost Comparison
+*Note: All prices are based on the estimates provided in the XLSX files in `/presentation/price_calculator`, expored from Azure Pricing Calculator [5]*
 
-| Orchestration Version                    | 100 Expenses / Day | 10,000 Expenses / Day |
-| :--------------------------------------- | :----------------- | :-------------------- |
-| **Version A (Durable Functions)**        | **$0.70**          | **$9.25**             |
-| **Version B (Logic Apps + Service Bus)** | **$12.64**         | **$243.76**           |
+| Version                          | 100 Expenses/Day | 10,000 Expenses/Day |
+| :------------------------------- | :--------------- | :------------------ |
+| **Version A: Durable Functions** | **$0.70**        | **$9.25**           |
+| **Version B: Logic Apps**        | **$12.64**       | **$243.76**         |
 
-##### **Cost Breakdown Summary**
+#### Cost Breakdown Summary
 
 **Version A: Durable Functions**
 
@@ -97,12 +97,17 @@ I would say that **Version A (Durable Functions)** is best for workflows that re
 
 ---
 
-## References
-1. [Durable Functions Code Constraints (Deterministic APIs)](https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-code-constraints)
-2. [Azure Service Bus Shared Access Signatures (SAS)](https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-sas)
-3. [Error Handling & Retries in Durable Functions](https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-error-handling)
-4. [Catch and handle errors in Azure Logic Apps ("Run After")](https://learn.microsoft.com/en-us/azure/logic-apps/logic-apps-exception-handling)
-5. [Azure Pricing Calculator](https://azure.microsoft.com/pricing/calculator/)
+## References (IEEE)
+
+[1] Microsoft, "Durable Functions code constraints," Azure Functions Documentation, Microsoft Learn. [Online]. Available: https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-code-constraints
+
+[2] Microsoft, "Service Bus authentication and authorization with Shared Access Signatures," Azure Service Bus Documentation, Microsoft Learn. [Online]. Available: https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-sas
+
+[3] Microsoft, "Handle errors in Durable Functions," Azure Functions Documentation, Microsoft Learn. [Online]. Available: https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-error-handling
+
+[4] Microsoft, "Handle and throw errors or exceptions in Azure Logic Apps," Azure Logic Apps Documentation, Microsoft Learn. [Online]. Available: https://learn.microsoft.com/en-us/azure/logic-apps/logic-apps-exception-handling
+
+[5] Microsoft, "Azure Pricing Calculator," Microsoft Azure. [Online]. Available: https://azure.microsoft.com/pricing/calculator/
 
 ---
 
